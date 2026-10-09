@@ -9,6 +9,7 @@ import { drawChart } from './ui/chart';
 import { Scene } from './ui/scene';
 import { UI, ERA_ACCENT, type Game } from './ui/ui';
 import { L, setLang } from './i18n';
+import { initConsent } from './consent';
 
 const params = new URLSearchParams(location.search);
 const SPEED = Math.max(0.1, Number(params.get('speed')) || 1);
@@ -189,7 +190,8 @@ function frame(now: number) {
     ui.render(d);
     drawChart(chart, s, ERA_ACCENT[d.era]);
   }
-  requestAnimationFrame(frame);
+  initConsent();
+requestAnimationFrame(frame);
 }
 
 // keep the simulation running when the tab is hidden (rAF pauses)
@@ -232,4 +234,5 @@ if (saved) {
     <p style="color:var(--lavender);font-size:19px">What happens at the end? It’s in the terms of service.</p>`), [{ label: L('GARAGE AUFSCHLIESSEN', 'UNLOCK THE GARAGE') }]);
 }
 
+initConsent();
 requestAnimationFrame(frame);

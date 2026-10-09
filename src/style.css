@@ -38,11 +38,16 @@ html, body {
   font-size: 20px;
   overflow: hidden;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* no double-tap zoom when tapping fast */
   -webkit-font-smoothing: none;
 }
 
 button {
   font-family: var(--px);
+  touch-action: manipulation;
   color: #000;
   cursor: pointer;
 }
@@ -365,3 +370,71 @@ button:disabled { cursor: not-allowed; }
 
 .lang-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; }
 .lang-row .px-label { margin-right: 6px; }
+
+#cookie-banner { position: fixed; left: 16px; bottom: 46px; z-index: 40; max-width: 420px; padding: 14px 16px; background: var(--card, #1d2b53); border: 3px solid var(--accent); box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 10px; }
+#cookie-banner p { margin: 0; font-size: 19px; line-height: 20px; }
+#cookie-banner .cb-actions { display: flex; gap: 8px; justify-content: flex-end; }
+#cookie-banner .big-btn { padding: 9px 12px; font-size: 10px; }
+#cookie-banner .big-btn.ghost { background: var(--card-hi); color: var(--white); }
+
+/* ---------- phones ---------- */
+#mtabs { display: none; }
+@media (max-width: 760px) {
+  html, body { font-size: 18px; }
+  #app { height: 100dvh; min-height: 0; }
+
+  #topbar { height: auto; flex-wrap: wrap; gap: 6px; padding: 6px 8px 8px; }
+  .logo { margin-right: 0; }
+  .logo-face { width: 22px; height: 22px; box-shadow: 3px 3px 0 #000; }
+  .logo-face i { width: 3px; height: 3px; top: 6px; }
+  .logo-face i:first-child { left: 5px; }
+  .logo-face i:nth-child(2) { left: 14px; }
+  .logo-face b { left: 5px; top: 14px; width: 12px; height: 3px; }
+  .logo-text { font-size: 9px; line-height: 12px; }
+  #era-label { gap: 3px; }
+  #era-name { font-size: 9px; }
+  .menu { margin-left: 4px; }
+  .icon-btn { width: 32px; height: 32px; }
+  #stats { order: 10; width: 100%; overflow-x: auto; gap: 5px; scrollbar-width: none; }
+  #stats::-webkit-scrollbar { display: none; }
+  .stat, .stat:nth-child(n+6) { display: flex; min-width: 0; flex-shrink: 0; padding: 3px 6px; }
+  .stat .v b { font-size: 19px; line-height: 17px; }
+  .stat .v small { font-size: 14px; }
+
+  #main { flex-direction: column; }
+  #center { flex: none; order: -1; }
+  #scene-wrap { flex: none; height: max(160px, 30dvh); }
+  #left, #right, #bottom { display: none; }
+  #left, #right { width: auto; flex: 1; border: none; min-height: 0; }
+  #app[data-m='left'] #left { display: flex; padding: 8px; gap: 8px; }
+  #app[data-m='right'] #right { display: flex; }
+  #app[data-m='bottom'] #center { flex: 1; min-height: 0; overflow-y: auto; }
+  #app[data-m='bottom'] #bottom { display: flex; flex-direction: column; height: auto; padding: 8px; gap: 8px; }
+  #app[data-m='bottom'] #chart-card { flex: none; height: 190px; }
+  #app[data-m='bottom'] #rsi-card { flex: none; }
+  #tabs { padding: 8px 8px 0; }
+  #amount { margin: 0 8px; }
+  #shop { margin: 0 8px 8px; padding: 6px; }
+  .item .desc { font-size: 15px; line-height: 15px; }
+  .buy { min-width: 72px; min-height: 38px; }
+
+  #mtabs { display: flex; flex-shrink: 0; background: #000; gap: 3px; padding: 3px 3px 0; }
+  .mtab { flex: 1; font-size: 9px; padding: 12px 4px; background: var(--card); color: var(--lavender); border: 2px solid #000; }
+  .mtab.active { background: var(--accent); color: #000; }
+
+  #ticker { height: 28px; padding-bottom: env(safe-area-inset-bottom); box-sizing: content-box; }
+  .ticker-tag { font-size: 7px; padding: 0 8px; }
+  #ticker-text { top: 3px; font-size: 19px; }
+
+  #toasts { top: 96px; width: 94vw; }
+  .toast { font-size: 17px; line-height: 17px; padding: 6px 10px; max-width: 94vw; }
+  .modal { padding: 16px; gap: 10px; max-height: 92dvh; overflow-y: auto; box-shadow: 5px 5px 0 #000, inset 0 0 0 3px var(--card-hi); }
+  .modal h2 { font-size: 12px; line-height: 18px; }
+  .end-modal h2 { font-size: 15px; line-height: 22px; }
+  .modal p { font-size: 18px; line-height: 19px; }
+  .modal .kv { font-size: 18px; line-height: 19px; }
+  .modal .big-btn { padding: 11px 12px; font-size: 10px; }
+  .lang-row { flex-wrap: wrap; }
+  #cookie-banner { left: 8px; right: 8px; bottom: 82px; max-width: none; }
+  #cookie-banner p { font-size: 17px; line-height: 18px; }
+}

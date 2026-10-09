@@ -40,7 +40,7 @@ export class Scene {
   private resize() {
     const cw = this.canvas.clientWidth;
     const ch = this.canvas.clientHeight;
-    const S = cw > 1000 || ch > 700 ? 4 : 3;
+    const S = cw > 1000 || ch > 700 ? 4 : cw < 600 ? 2 : 3;
     const W = Math.max(80, Math.floor(cw / S));
     const H = Math.max(60, Math.floor(ch / S));
     if (W !== this.W || H !== this.H) {

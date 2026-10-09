@@ -6,6 +6,7 @@ import {
 } from '../game/engine';
 import { fmt, money, flops, flop, watts, bytes, duration, pct, decimal } from '../game/format';
 import { L, lang, type Lang } from '../i18n';
+import { consent, setConsent } from '../consent';
 import { sfx } from './audio';
 
 export type Amt = 1 | 10 | 'max';
@@ -85,6 +86,7 @@ export class UI {
     private hooks: { save: () => void; reset: () => void; prestige: () => void; toggleSound: () => boolean; setLang: (l: Lang) => void },
   ) {
     this.translateStatic();
+    this.buildMobileTabs();
     this.buildTop();
     this.buildLeft();
     this.buildTabs();
@@ -103,6 +105,24 @@ export class UI {
     $('btn-menu').title = L('Menü', 'Menu');
     $('chart-title').textContent = L('INTELLIGENZ (LOG)', 'INTELLIGENCE (LOG)');
     $('ticker-tag').textContent = L('+++ EILMELDUNG +++', '+++ BREAKING +++');
+  }
+
+  // phone layout: scene on top, one panel below, switched by tabs (hidden on desktop via CSS)
+  private buildMobileTabs() {
+    const app = $('app');
+    const nav = $('mtabs');
+    const tabs: [string, string][] = [
+      ['left', L('FIRMA', 'COMPANY')],
+      ['right', 'SHOP'],
+      ['bottom', 'STATS'],
+    ];
+    nav.innerHTML = tabs.map(([k, l]) => `<button class="mtab" data-m="${k}">${l}</button>`).join('');
+    const pick = (k: string) => {
+      app.dataset.m = k;
+      for (const b of nav.querySelectorAll<HTMLElement>('.mtab')) b.classList.toggle('active', b.dataset.m === k);
+    };
+    for (const b of nav.querySelectorAll<HTMLElement>('.mtab')) b.addEventListener('click', () => pick(b.dataset.m!));
+    pick('left');
   }
 
   // ---------- top bar ----------
@@ -635,6 +655,10 @@ export class UI {
           <button class="amt${lang === 'de' ? ' active' : ''}" data-lang="de">DEUTSCH</button>
           <button class="amt${lang === 'en' ? ' active' : ''}" data-lang="en">ENGLISH</button>
         </div>
+        <div class="lang-row"><span class="px-label">${L('STATISTIK-COOKIES', 'ANALYTICS COOKIES')}</span>
+          <button class="amt${consent() === 'granted' ? ' active' : ''}" data-consent="granted">${L('AN', 'ON')}</button>
+          <button class="amt${consent() !== 'granted' ? ' active' : ''}" data-consent="denied">${L('AUS', 'OFF')}</button>
+        </div>
         <p style="font-size:18px;color:var(--lavender)">${L(
           'Tipp: Teile Compute zwischen Training (neue Modelle) und Inferenz (Nutzer = Geld). Achte auf Strom und Kühlung, sonst drosseln die Server. Goldene Ereignisse in der Szene anklicken!',
           'Tip: Split compute between training (new models) and inference (users = money). Watch power and cooling, or your servers throttle. Click golden events in the scene!',
@@ -647,6 +671,16 @@ export class UI {
         b.addEventListener('click', () => {
           const l = b.dataset.lang as Lang;
           if (l !== lang) this.hooks.setLang(l);
+        });
+      }
+      for (const b of $('modal-root').querySelectorAll<HTMLElement>('button[data-consent]')) {
+        b.addEventListener('click', () => {
+          const v = b.dataset.consent as 'granted' | 'denied';
+          if (v === 'granted' && consent() === 'granted') return;
+          if (v === 'denied') this.hooks.save();
+          setConsent(v);
+          document.getElementById('cookie-banner')?.remove();
+          for (const x of $('modal-root').querySelectorAll('button[data-consent]')) x.classList.toggle('active', x === b);
         });
       }
     });
