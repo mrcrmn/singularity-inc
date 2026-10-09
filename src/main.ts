@@ -190,8 +190,7 @@ function frame(now: number) {
     ui.render(d);
     drawChart(chart, s, ERA_ACCENT[d.era]);
   }
-  initConsent();
-requestAnimationFrame(frame);
+  requestAnimationFrame(frame);
 }
 
 // keep the simulation running when the tab is hidden (rAF pauses)

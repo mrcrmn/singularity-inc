@@ -61,7 +61,10 @@ export function setConsent(v: 'granted' | 'denied') {
   }
 }
 
+let started = false;
 export function initConsent() {
+  if (started) return;
+  started = true;
   const c = consent();
   if (c === 'granted') return loadAnalytics();
   if (c === 'denied') return;
