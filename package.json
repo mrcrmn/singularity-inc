@@ -8,8 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "deploy": "sh scripts/deploy.sh"
+    "test": "vitest run"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
