@@ -4,7 +4,8 @@ import {
   buildingCost, staffCost, buyCount, buyBuilding, hire, buyUpgrade, upgradeAffordable, isUnlocked, modelName,
   doClickMoney, doClickTrain, EARTH_KG, type Derived, type State,
 } from '../game/engine';
-import { fmt, money, flops, flop, watts, bytes, duration, pct } from '../game/format';
+import { fmt, money, flops, flop, watts, bytes, duration, pct, decimal } from '../game/format';
+import { L, lang, type Lang } from '../i18n';
 import { sfx } from './audio';
 
 export type Amt = 1 | 10 | 'max';
@@ -59,10 +60,10 @@ function icon(kind: string, color: string): string {
 const HAIRS = ['#5f574f', '#000', '#ab5236', '#ffa300', '#ffec27'];
 
 const CAT_HEAD: Record<Cat, string> = {
-  compute: 'RECHENLEISTUNG',
-  power: 'STROM',
-  cooling: 'KÜHLUNG',
-  nano: 'ENDSPIEL',
+  compute: L('RECHENLEISTUNG', 'COMPUTE'),
+  power: L('STROM', 'POWER'),
+  cooling: L('KÜHLUNG', 'COOLING'),
+  nano: L('ENDSPIEL', 'ENDGAME'),
 };
 
 interface Updater { (s: State, d: Derived): void }
@@ -81,8 +82,9 @@ export class UI {
 
   constructor(
     private game: Game,
-    private hooks: { save: () => void; reset: () => void; prestige: () => void; toggleSound: () => boolean },
+    private hooks: { save: () => void; reset: () => void; prestige: () => void; toggleSound: () => boolean; setLang: (l: Lang) => void },
   ) {
+    this.translateStatic();
     this.buildTop();
     this.buildLeft();
     this.buildTabs();
@@ -94,17 +96,26 @@ export class UI {
     return this.game.s;
   }
 
+  // texts that live in index.html
+  private translateStatic() {
+    document.documentElement.lang = lang;
+    $('btn-sound').title = L('Ton an/aus', 'Sound on/off');
+    $('btn-menu').title = L('Menü', 'Menu');
+    $('chart-title').textContent = L('INTELLIGENZ (LOG)', 'INTELLIGENCE (LOG)');
+    $('ticker-tag').textContent = L('+++ EILMELDUNG +++', '+++ BREAKING +++');
+  }
+
   // ---------- top bar ----------
 
   private buildTop() {
     const box = $('stats');
     const defs: [string, string, boolean][] = [
-      ['money', 'GELD', false],
-      ['data', 'DATEN', false],
-      ['rp', 'FORSCHUNG', false],
+      ['money', L('GELD', 'MONEY'), false],
+      ['data', L('DATEN', 'DATA'), false],
+      ['rp', L('FORSCHUNG', 'RESEARCH'), false],
       ['compute', 'COMPUTE', false],
-      ['power', 'STROM', true],
-      ['cool', 'KÜHLUNG', true],
+      ['power', L('STROM', 'POWER'), true],
+      ['cool', L('KÜHLUNG', 'COOLING'), true],
     ];
     for (const [id, label, meter] of defs) {
       const e = el('div', 'stat', `<span class="px-label">${label}</span><div class="v"><b></b><small></small></div>${meter ? '<div class="meter"><i></i></div>' : ''}`);
@@ -128,14 +139,14 @@ export class UI {
     this.setStat('money', money(s.money), `+${money(d.revenue)}/s`);
     this.setStat('data', bytes(s.data), `+${bytes(d.dataRate)}/s`, !s.dataPaid && s.gen < 60 && d.dataRate * 30 < d.dataNeed - s.data);
     this.setStat('rp', fmt(s.rp), `+${fmt(d.rpRate)}/s`);
-    this.setStat('compute', flops(d.compute), d.throttle < 1 ? `${pct(d.throttle)} Leistung` : '', d.throttle < 1);
+    this.setStat('compute', flops(d.compute), d.throttle < 1 ? `${pct(d.throttle)} ${L('Leistung', 'output')}` : '', d.throttle < 1);
     const pw = d.powerUse / d.powerCap;
     this.setStat('power', watts(d.powerUse), `/ ${watts(d.powerCap)}`, d.powerLimited, pw);
     const ht = d.heat / d.coolCap;
-    this.setStat('cool', watts(d.coolCap), d.heatLimited ? 'zu heiß!' : `${pct(Math.min(1, ht))} genutzt`, d.heatLimited, ht);
+    this.setStat('cool', watts(d.coolCap), d.heatLimited ? L('zu heiß!', 'too hot!') : `${pct(Math.min(1, ht))} ${L('genutzt', 'used')}`, d.heatLimited, ht);
 
     const era = ERAS[d.era];
-    $('era-count').textContent = `ÄRA ${d.era + 1} / ${ERAS.length}`;
+    $('era-count').textContent = `${L('ÄRA', 'ERA')} ${d.era + 1} / ${ERAS.length}`;
     $('era-name').textContent = era.short;
   }
 
@@ -144,13 +155,13 @@ export class UI {
   private buildLeft() {
     $('left').innerHTML = `
       <div class="card">
-        <div class="card-head"><span class="px-label">AKTUELLES MODELL</span><span class="tag" id="m-tag">LIVE</span></div>
+        <div class="card-head"><span class="px-label">${L('AKTUELLES MODELL', 'CURRENT MODEL')}</span><span class="tag" id="m-tag">LIVE</span></div>
         <div class="model-name" id="m-name"></div>
         <div class="kv">
           <span>IQ</span><span id="m-iq"></span>
-          <span>Nutzer</span><span id="m-users"></span>
-          <span>Preis/Nutzer</span><span id="m-price"></span>
-          <span>Trainingstempo</span><span id="m-speed"></span>
+          <span>${L('Nutzer', 'Users')}</span><span id="m-users"></span>
+          <span>${L('Preis/Nutzer', 'Price/user')}</span><span id="m-price"></span>
+          <span>${L('Trainingstempo', 'Training speed')}</span><span id="m-speed"></span>
         </div>
         <div class="skill" id="m-skill"></div>
       </div>
@@ -160,13 +171,13 @@ export class UI {
         <div class="sub"><span id="t-pct"></span><span id="t-eta"></span></div>
         <div class="hint" id="t-data"></div>
         <div class="btn-row">
-          <button class="big-btn" id="btn-train">TRAINING<br>BOOSTEN</button>
-          <button class="big-btn alt" id="btn-money">PROMPTS<br>VON HAND</button>
+          <button class="big-btn" id="btn-train">${L('TRAINING<br>BOOSTEN', 'BOOST<br>TRAINING')}</button>
+          <button class="big-btn alt" id="btn-money">${L('PROMPTS<br>VON HAND', 'HAND-WRITE<br>PROMPTS')}</button>
         </div>
         <div class="sub"><span id="c-train"></span><span id="c-money"></span></div>
       </div>
       <div class="card alloc">
-        <div class="card-head"><span class="px-label">COMPUTE-AUFTEILUNG</span></div>
+        <div class="card-head"><span class="px-label">${L('COMPUTE-AUFTEILUNG', 'COMPUTE SPLIT')}</span></div>
         <input type="range" id="alloc" min="0" max="100" step="5" />
         <div class="sub"><span style="color:var(--blue)" id="a-train"></span><span style="color:var(--yellow)" id="a-infer"></span></div>
         <div class="hint" id="a-hint"></div>
@@ -201,7 +212,7 @@ export class UI {
   }
 
   private updateLeft(s: State, d: Derived) {
-    $('m-name').textContent = s.gen > 0 ? modelName(s.gen) : 'KEIN MODELL';
+    $('m-name').textContent = s.gen > 0 ? modelName(s.gen) : L('KEIN MODELL', 'NO MODEL');
     $('m-tag').textContent = s.gen > 0 ? `GEN ${s.gen}` : 'OFFLINE';
     $('m-tag').className = s.gen > 0 ? 'tag' : 'tag red';
     $('m-iq').textContent = s.gen > 0 ? fmt(d.iq) : '—';
@@ -218,20 +229,20 @@ export class UI {
     if (!s.dataPaid) {
       frac = Math.min(1, s.data / d.dataNeed);
       bar.classList.add('data');
-      $('t-tag').textContent = 'DATEN';
+      $('t-tag').textContent = L('DATEN', 'DATA');
       $('t-tag').className = 'tag red';
       $('t-pct').textContent = `${bytes(s.data)} / ${bytes(d.dataNeed)}`;
       $('t-eta').textContent = d.dataRate > 0 ? duration((d.dataNeed - s.data) / d.dataRate) : '∞';
-      $('t-data').textContent = 'Trainingsdaten fehlen. Labeler einstellen oder Nutzer sammeln.';
+      $('t-data').textContent = L('Trainingsdaten fehlen. Labeler einstellen oder Nutzer sammeln.', 'Not enough training data. Hire labelers or gather users.');
       $('t-data').className = 'hint warn';
     } else {
       frac = Math.min(1, s.progress / d.need);
       bar.classList.remove('data');
-      $('t-tag').textContent = d.throttle < 1 ? 'GEDROSSELT' : 'LÄUFT';
+      $('t-tag').textContent = d.throttle < 1 ? L('GEDROSSELT', 'THROTTLED') : L('LÄUFT', 'RUNNING');
       $('t-tag').className = d.throttle < 1 ? 'tag red' : 'tag orange';
-      $('t-pct').textContent = `${(frac * 100).toFixed(frac < 0.1 ? 1 : 0)}% · ${flop(d.need)}`;
+      $('t-pct').textContent = `${decimal(frac * 100, frac < 0.1 ? 1 : 0)}% · ${flop(d.need)}`;
       $('t-eta').textContent = 'ETA ' + duration(d.eta);
-      $('t-data').textContent = `Daten bereit. Nächstes Modell braucht ${bytes(d.dataNeed)}.`;
+      $('t-data').textContent = L(`Daten bereit. Nächstes Modell braucht ${bytes(d.dataNeed)}.`, `Data ready. Next model needs ${bytes(d.dataNeed)}.`);
       $('t-data').className = 'hint';
     }
     const on = Math.floor(frac * 20);
@@ -248,19 +259,19 @@ export class UI {
     if (document.activeElement !== slider && slider.value !== String(p)) slider.value = String(p);
     slider.style.setProperty('--p', p + '%');
     $('a-train').textContent = `TRAINING ${p}%`;
-    $('a-infer').textContent = `INFERENZ ${100 - p}%`;
+    $('a-infer').textContent = `${L('INFERENZ', 'INFERENCE')} ${100 - p}%`;
     const hint = $('a-hint');
     let txt: string;
     let warn = false;
     if (s.gen === 0) {
-      txt = 'Noch kein Modell. Inferenz bringt nichts, alles ins Training!';
+      txt = L('Noch kein Modell. Inferenz bringt nichts, alles ins Training!', 'No model yet. Inference is useless, put everything into training!');
       warn = s.alloc < 0.95;
     } else if (d.demand > d.capacity * 1.1) {
-      txt = `Server voll: ${fmt(d.demand - d.capacity)} Nutzer warten. Mehr Inferenz oder Compute!`;
+      txt = L(`Server voll: ${fmt(d.demand - d.capacity)} Nutzer warten. Mehr Inferenz oder Compute!`, `Servers full: ${fmt(d.demand - d.capacity)} users waiting. More inference or compute!`);
       warn = true;
     } else if (d.capacity > d.demand * 3) {
-      txt = `Überkapazität: ${pct(1 - d.demand / d.capacity)} der Inferenz drehen Däumchen.`;
-    } else txt = 'Ausgewogen. Die Investoren nicken anerkennend.';
+      txt = L(`Überkapazität: ${pct(1 - d.demand / d.capacity)} der Inferenz drehen Däumchen.`, `Overcapacity: ${pct(1 - d.demand / d.capacity)} of inference is twiddling its thumbs.`);
+    } else txt = L('Ausgewogen. Die Investoren nicken anerkennend.', 'Balanced. The investors nod approvingly.');
     hint.textContent = txt;
     hint.className = warn ? 'hint warn' : 'hint';
 
@@ -270,7 +281,7 @@ export class UI {
     if (key !== this.teamKey) this.buildTeam(visible.map((x) => x.id));
     for (const u of this.teamUpd) u(s, d);
     const total = Object.values(s.st).reduce((a, b) => a + b, 0);
-    $('team-count').textContent = `${fmt(total)} LEUTE`;
+    $('team-count').textContent = `${fmt(total)} ${L('LEUTE', 'PEOPLE')}`;
   }
 
   private buildTeam(ids: string[]) {
@@ -303,7 +314,7 @@ export class UI {
 
   private buildTabs() {
     const tabs = $('tabs');
-    const defs: [Tab, string][] = [['infra', 'INFRA'], ['research', 'FORSCHUNG'], ['projects', 'PROJEKTE']];
+    const defs: [Tab, string][] = [['infra', 'INFRA'], ['research', L('FORSCHUNG', 'RESEARCH')], ['projects', L('PROJEKTE', 'PROJECTS')]];
     for (const [id, label] of defs) {
       const b = el('button', 'tab', `${label}<span class="dot" hidden></span>`);
       b.dataset.tab = id;
@@ -315,7 +326,7 @@ export class UI {
       tabs.appendChild(b);
     }
     const amount = $('amount');
-    amount.innerHTML = '<span class="px-label">KAUFMENGE</span>';
+    amount.innerHTML = `<span class="px-label">${L('KAUFMENGE', 'BUY AMOUNT')}</span>`;
     for (const a of [1, 10, 'max'] as Amt[]) {
       const b = el('button', 'amt', a === 'max' ? 'MAX' : '×' + a);
       b.dataset.amt = String(a);
@@ -338,7 +349,7 @@ export class UI {
         if (buyUpgrade(s, id)) {
           if (u.kind === 'research') sfx.research();
           else sfx.coin();
-          this.toast(u.kind === 'research' ? 'ERFORSCHT' : 'PROJEKT', `${u.name}: ${u.fx}`);
+          this.toast(u.kind === 'research' ? L('ERFORSCHT', 'RESEARCHED') : L('PROJEKT', 'PROJECT'), `${u.name}: ${u.fx}`);
         } else sfx.deny();
       }
     });
@@ -409,7 +420,7 @@ export class UI {
       }
       shop.appendChild(head);
       for (const b of open) this.buildingItem(b);
-      if (teaser) this.lockedItem(teaser.name, teaser.req ? `Benötigt Forschung: ${UPGRADES.find((u) => u.id === teaser.req)?.name}` : `Ab ${modelName(teaser.gen)}`);
+      if (teaser) this.lockedItem(teaser.name, teaser.req ? `${L('Benötigt Forschung', 'Requires research')}: ${UPGRADES.find((u) => u.id === teaser.req)?.name}` : `${L('Ab', 'From')} ${modelName(teaser.gen)}`);
     }
   }
 
@@ -434,9 +445,9 @@ export class UI {
       em.textContent = owned ? String(owned) : '';
       let f = '';
       if (b.flops) f = `+${flops(b.flops * m.compute)} · ${watts((b.use ?? 0) * m.powerUse)}`;
-      else if (b.supply) f = `+${watts(b.supply * m.powerCap)} Strom`;
-      else if (b.cool) f = `+${watts(b.cool * m.cooling)} Kühlung`;
-      else if (b.nano) f = `Schwarm: ${fmt(s.nano)} · ${m.repl > 0 ? '+' + pct(m.repl) + '/s' : 'repliziert nicht'}`;
+      else if (b.supply) f = `+${watts(b.supply * m.powerCap)} ${L('Strom', 'power')}`;
+      else if (b.cool) f = `+${watts(b.cool * m.cooling)} ${L('Kühlung', 'cooling')}`;
+      else if (b.nano) f = `${L('Schwarm', 'Swarm')}: ${fmt(s.nano)} · ${m.repl > 0 ? '+' + pct(m.repl) + '/s' : L('repliziert nicht', 'not replicating')}`;
       if (fx.textContent !== f) fx.textContent = f;
       const label = `${n > 1 ? '+' + n + ' ' : ''}${money(cost)}`;
       if (btn.textContent !== label) btn.textContent = label;
@@ -456,8 +467,8 @@ export class UI {
     const open = list.filter((u) => !s.up[u.id] && isUnlocked(s, u)).sort((a, b) => a.cost - b.cost);
     const locked = list.filter((u) => !s.up[u.id] && !isUnlocked(s, u)).sort((a, b) => a.gen - b.gen).slice(0, 2);
     const done = list.filter((u) => s.up[u.id]);
-    shop.appendChild(el('div', 'group-head', `<span class="px-label">${kind === 'research' ? 'VERFÜGBAR (KOSTET FORSCHUNG)' : 'VERFÜGBAR (KOSTET GELD)'}</span>`));
-    if (!open.length) shop.appendChild(el('div', 'empty', kind === 'research' ? 'Gerade nichts zu erforschen. Trainiere bessere Modelle!' : 'Keine Projekte. Die PR-Abteilung denkt nach.'));
+    shop.appendChild(el('div', 'group-head', `<span class="px-label">${kind === 'research' ? L('VERFÜGBAR (KOSTET FORSCHUNG)', 'AVAILABLE (COSTS RESEARCH)') : L('VERFÜGBAR (KOSTET GELD)', 'AVAILABLE (COSTS MONEY)')}</span>`));
+    if (!open.length) shop.appendChild(el('div', 'empty', kind === 'research' ? L('Gerade nichts zu erforschen. Trainiere bessere Modelle!', 'Nothing to research right now. Train better models!') : L('Keine Projekte. Die PR-Abteilung denkt nach.', 'No projects. The PR department is thinking.')));
     for (const u of open) {
       const ico = u.grant ? icon('grant', '#ffec27') : icon(kind, kind === 'research' ? '#00e436' : '#ffa300');
       const it = el('div', 'item upg', `
@@ -468,7 +479,7 @@ export class UI {
           <div class="desc">${u.desc}</div>
         </div>
         <button class="buy ${kind === 'research' ? 'rp' : ''}" data-act="upgrade" data-id="${u.id}">${
-          kind === 'research' ? fmt(u.cost) + ' FP' : u.cost > 0 ? money(u.cost) : 'GRATIS'
+          kind === 'research' ? fmt(u.cost) + L(' FP', ' RP') : u.cost > 0 ? money(u.cost) : L('GRATIS', 'FREE')
         }</button>`);
       shop.appendChild(it);
       const btn = it.querySelector('button')!;
@@ -477,14 +488,14 @@ export class UI {
       });
     }
     if (locked.length) {
-      shop.appendChild(el('div', 'group-head', '<span class="px-label">DEMNÄCHST</span>'));
+      shop.appendChild(el('div', 'group-head', `<span class="px-label">${L('DEMNÄCHST', 'COMING SOON')}</span>`));
       for (const u of locked) {
-        const why = u.req && !s.up[u.req] ? `Benötigt: ${UPGRADES.find((x) => x.id === u.req)?.name}` : `Ab ${modelName(u.gen)}`;
+        const why = u.req && !s.up[u.req] ? `${L('Benötigt', 'Requires')}: ${UPGRADES.find((x) => x.id === u.req)?.name}` : `${L('Ab', 'From')} ${modelName(u.gen)}`;
         this.lockedItem('???', why);
       }
     }
     if (done.length) {
-      shop.appendChild(el('div', 'group-head', `<span class="px-label">${kind === 'research' ? 'ERFORSCHT' : 'ERLEDIGT'} (${done.length})</span>`));
+      shop.appendChild(el('div', 'group-head', `<span class="px-label">${kind === 'research' ? L('ERFORSCHT', 'RESEARCHED') : L('ERLEDIGT', 'DONE')} (${done.length})</span>`));
       shop.appendChild(el('div', 'done-list', done.map((u) => u.name).join(' · ')));
     }
   }
@@ -496,16 +507,16 @@ export class UI {
     if (!card.dataset.built) {
       card.dataset.built = '1';
       card.innerHTML = `
-        <div class="card-head"><span class="px-label">REKURSIONSFAKTOR</span><span class="tag" id="r-tag"></span></div>
+        <div class="card-head"><span class="px-label">${L('REKURSIONSFAKTOR', 'RECURSION FACTOR')}</span><span class="tag" id="r-tag"></span></div>
         <div class="rsi-big" id="r-big"></div>
         <div class="rsi-parts" id="r-parts"></div>
         <div id="r-earth"><div class="sub"><span id="r-earth-l"></span><span id="r-earth-v"></span></div><div class="earth-bar"><i></i></div></div>`;
       const parts = $('r-parts');
-      for (const label of ['HW', 'ALGO', 'TEAM', 'KI']) parts.appendChild(el('div', '', `<i></i><span>${label}</span>`));
+      for (const label of ['HW', 'ALGO', 'TEAM', L('KI', 'AI')]) parts.appendChild(el('div', '', `<i></i><span>${label}</span>`));
     }
     const engMult = 1 + 0.05 * (s.st.engineer ?? 0);
     $('r-big').textContent = '×' + fmt(d.algo * d.mults.compute);
-    $('r-tag').textContent = s.rsi > 1 ? 'SELBSTVERBESSERND' : 'MENSCHLICH';
+    $('r-tag').textContent = s.rsi > 1 ? L('SELBSTVERBESSERND', 'SELF-IMPROVING') : L('MENSCHLICH', 'HUMAN');
     $('r-tag').className = s.rsi > 1 ? 'tag red' : 'tag';
     const vals = [d.mults.compute, d.mults.train, engMult, s.rsi];
     const colors = ['var(--lavender)', 'var(--blue)', 'var(--yellow)', 'var(--accent)'];
@@ -520,11 +531,11 @@ export class UI {
     earth.style.display = showEarth ? '' : 'none';
     if (showEarth) {
       const conv = s.earthKg / EARTH_KG;
-      $('r-earth-l').textContent = 'ERDE → COMPUTRONIUM';
-      $('r-earth-v').textContent = conv < 0.001 && conv > 0 ? '<0,1%' : (conv * 100).toFixed(1).replace('.', ',') + '%';
+      $('r-earth-l').textContent = L('ERDE → COMPUTRONIUM', 'EARTH → COMPUTRONIUM');
+      $('r-earth-v').textContent = conv < 0.001 && conv > 0 ? `<${decimal(0.1, 1)}%` : decimal(conv * 100, 1) + '%';
       (earth.querySelector('.earth-bar i') as HTMLElement).style.width = conv * 100 + '%';
     }
-    $('chart-legend').textContent = s.gen > 0 ? `IQ ${fmt(d.iq)} · Mensch = 100` : 'noch kein Modell';
+    $('chart-legend').textContent = s.gen > 0 ? `IQ ${fmt(d.iq)} · ${L('Mensch', 'Human')} = 100` : L('noch kein Modell', 'no model yet');
   }
 
   // ---------- ticker ----------
@@ -533,11 +544,19 @@ export class UI {
     const s = this.s;
     const era = ERAS.findIndex((_, i) => i === ERAS.length - 1 || s.gen < ERAS[i + 1].gen);
     const name = modelName(Math.max(1, s.gen));
-    const dynamic = [
+    const when = Math.floor(Math.random() * 4);
+    const dynamic = lang === 'en' ? [
+      `${name} passes the Turing test – Turing test fails ${name}`,
+      `Analysts value Singularity Inc. at ${money(Math.max(1e6, s.totalMoney * 60))} – “a conservative estimate”`,
+      `${fmt(Math.max(3, s.users))} people ask ${name} daily whether their shirt matches their pants`,
+      `CEO in interview: “AGI is ${['next year', '18 months away', 'basically already here', 'a matter of definition'][when]}”`,
+      `New model ${modelName(s.gen + 1)} “too dangerous to release” – launching next week`,
+      `Token maxxing study: ${name} answers now average ${fmt(400 + s.gen * 900)} words`,
+    ] : [
       `${name} besteht Turing-Test – Turing-Test besteht ${name} nicht`,
       `Analysten bewerten Singularity Inc. mit ${money(Math.max(1e6, s.totalMoney * 60))} – „konservativ geschätzt“`,
       `${fmt(Math.max(3, s.users))} Menschen fragen ${name} täglich, ob ihr Hemd zur Hose passt`,
-      `CEO im Interview: „AGI ist ${['nächstes Jahr', 'in 18 Monaten', 'eigentlich schon da', 'eine Frage der Definition'][Math.floor(Math.random() * 4)]}“`,
+      `CEO im Interview: „AGI ist ${['nächstes Jahr', 'in 18 Monaten', 'eigentlich schon da', 'eine Frage der Definition'][when]}“`,
       `Neues Modell ${modelName(s.gen + 1)} „zu gefährlich zum Veröffentlichen“ – Launch nächste Woche`,
       `Token-Maxxing-Studie: Antworten von ${name} jetzt im Schnitt ${fmt(400 + s.gen * 900)} Wörter lang`,
     ];
@@ -605,18 +624,31 @@ export class UI {
     $('btn-menu').addEventListener('click', () => {
       sfx.click();
       const s = this.s;
-      this.modal('MENÜ', `
-        <p>Universum #${s.universe}${s.universe > 1 ? ` · Bonus ×${fmt(Math.pow(2, s.universe - 1))} auf alles` : ''} · Spielzeit ${duration(s.time)}</p>
+      this.modal(L('MENÜ', 'MENU'), `
+        <p>${L('Universum', 'Universe')} #${s.universe}${s.universe > 1 ? ` · ${L('Bonus', 'Bonus')} ×${fmt(Math.pow(2, s.universe - 1))} ${L('auf alles', 'on everything')}` : ''} · ${L('Spielzeit', 'Play time')} ${duration(s.time)}</p>
         <div class="kv">
-          <span>Generationen</span><span>${s.gen}</span>
-          <span>Gesamtumsatz</span><span>${money(s.totalMoney)}</span>
-          <span>Klicks</span><span>${fmt(s.clicks)}</span>
+          <span>${L('Generationen', 'Generations')}</span><span>${s.gen}</span>
+          <span>${L('Gesamtumsatz', 'Total revenue')}</span><span>${money(s.totalMoney)}</span>
+          <span>${L('Klicks', 'Clicks')}</span><span>${fmt(s.clicks)}</span>
         </div>
-        <p style="font-size:18px;color:var(--lavender)">Tipp: Teile Compute zwischen Training (neue Modelle) und Inferenz (Nutzer = Geld). Achte auf Strom und Kühlung, sonst drosseln die Server. Goldene Ereignisse in der Szene anklicken!</p>`, [
-        { label: 'SPIEL LÖSCHEN', cls: 'danger', fn: () => this.confirmReset() },
-        { label: 'SPEICHERN', cls: 'ghost', fn: () => { this.hooks.save(); this.toast('GESPEICHERT', 'Spielstand im Browser gesichert.'); } },
-        { label: 'WEITER', fn: () => {} },
+        <div class="lang-row"><span class="px-label">${L('SPRACHE', 'LANGUAGE')}</span>
+          <button class="amt${lang === 'de' ? ' active' : ''}" data-lang="de">DEUTSCH</button>
+          <button class="amt${lang === 'en' ? ' active' : ''}" data-lang="en">ENGLISH</button>
+        </div>
+        <p style="font-size:18px;color:var(--lavender)">${L(
+          'Tipp: Teile Compute zwischen Training (neue Modelle) und Inferenz (Nutzer = Geld). Achte auf Strom und Kühlung, sonst drosseln die Server. Goldene Ereignisse in der Szene anklicken!',
+          'Tip: Split compute between training (new models) and inference (users = money). Watch power and cooling, or your servers throttle. Click golden events in the scene!',
+        )}</p>`, [
+        { label: L('SPIEL LÖSCHEN', 'DELETE GAME'), cls: 'danger', fn: () => this.confirmReset() },
+        { label: L('SPEICHERN', 'SAVE'), cls: 'ghost', fn: () => { this.hooks.save(); this.toast(L('GESPEICHERT', 'SAVED'), L('Spielstand im Browser gesichert.', 'Game saved in your browser.')); } },
+        { label: L('WEITER', 'CONTINUE'), fn: () => {} },
       ]);
+      for (const b of $('modal-root').querySelectorAll<HTMLElement>('button[data-lang]')) {
+        b.addEventListener('click', () => {
+          const l = b.dataset.lang as Lang;
+          if (l !== lang) this.hooks.setLang(l);
+        });
+      }
     });
     const snd = $('btn-sound');
     snd.addEventListener('click', () => {
@@ -634,9 +666,9 @@ export class UI {
   }
 
   private confirmReset() {
-    this.modal('WIRKLICH LÖSCHEN?', '<p>Alles weg: Modelle, Rechenzentren, Universen. Die Investoren werden enttäuscht sein.</p>', [
-      { label: 'ABBRECHEN', cls: 'ghost' },
-      { label: 'JA, LÖSCHEN', cls: 'danger', fn: () => this.hooks.reset() },
+    this.modal(L('WIRKLICH LÖSCHEN?', 'REALLY DELETE?'), `<p>${L('Alles weg: Modelle, Rechenzentren, Universen. Die Investoren werden enttäuscht sein.', 'Everything gone: models, data centers, universes. The investors will be disappointed.')}</p>`, [
+      { label: L('ABBRECHEN', 'CANCEL'), cls: 'ghost' },
+      { label: L('JA, LÖSCHEN', 'YES, DELETE'), cls: 'danger', fn: () => this.hooks.reset() },
     ]);
   }
 
@@ -646,6 +678,7 @@ export class UI {
     this.teamKey = '';
     this.seenUpgrades.clear();
     $('rsi-card').dataset.built = '';
+    this.nextNews();
   }
 
   render(d: Derived) {

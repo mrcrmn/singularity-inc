@@ -1,4 +1,6 @@
 // Static game content: eras, buildings, staff, research, projects, flavor text.
+import { lang } from '../i18n';
+import { BUILDINGS_EN, ERAS_EN, MODEL_SKILLS_EN, NEWS_EN, SKILL_LATE_EN, STAFF_EN, UPGRADES_EN } from './data.en';
 
 export interface Mults {
   compute: number; // raw hardware FLOP/s
@@ -136,7 +138,7 @@ export const UPGRADES: Upgrade[] = [
   { id: 'r_attention', kind: 'research', name: 'Attention Is All You Need', fx: 'Training ×2', desc: 'Aufmerksamkeit. Das, was deinen Nutzern fehlt.', cost: 400, gen: 4, apply: (m) => { m.train *= 2; } },
   { id: 'r_rlhf', kind: 'research', name: 'RLHF: „Gute Frage!“', fx: 'Nachfrage ×2', desc: 'Das Modell findet jetzt jede Frage großartig.', cost: 1e3, gen: 5, apply: (m) => { m.demand *= 2; } },
   { id: 'r_hallu', kind: 'research', name: 'Halluzinationen umbenennen', fx: 'Umsatz ×1,5', desc: 'Ab sofort heißt das „kreative Faktentreue“.', cost: 1.6e3, gen: 5, apply: (m) => { m.revenue *= 1.5; } },
-  { id: 'r_flash', kind: 'research', name: 'FlashAttention', fx: 'Training ×1,25', desc: 'Wie Attention, nur mit Blitz im Namen.', cost: 2.5e3, gen: 6, apply: (m) => { m.train *= 1.6; } },
+  { id: 'r_flash', kind: 'research', name: 'FlashAttention', fx: 'Training ×1,6', desc: 'Wie Attention, nur mit Blitz im Namen.', cost: 2.5e3, gen: 6, apply: (m) => { m.train *= 1.6; } },
   { id: 'r_tokenmax', kind: 'research', name: 'Token-Maxxing', fx: 'Umsatz ×2', desc: 'Antworten jetzt 4× länger. Abrechnung pro Token. Zufall.', cost: 3.5e3, gen: 6, apply: (m) => { m.revenue *= 2; } },
   { id: 'r_moe', kind: 'research', name: 'Mixture of Experts', fx: 'Inferenz ×2', desc: '64 Experten, von denen 62 schlafen.', cost: 5e3, gen: 7, apply: (m) => { m.infer *= 2; } },
   { id: 'r_benchmark', kind: 'research', name: 'Auf dem Testset trainieren', fx: 'Nachfrage ×2', desc: '100% im Benchmark! Reiner Zufall.', cost: 7e3, gen: 7, apply: (m) => { m.demand *= 2; } },
@@ -217,11 +219,11 @@ export const MODEL_SKILLS: string[] = [
   'Allgemeine künstliche Intelligenz.',
 ];
 
+const SKILL_LATE = ['Verbessert sich selbst. Immer schneller.', 'Denkt in Gedanken, die Menschen nicht denken können.', 'Ist. Überall. Gleichzeitig.'];
+
 export function skillFor(gen: number): string {
   if (gen < MODEL_SKILLS.length) return MODEL_SKILLS[gen];
-  if (gen < 28) return 'Verbessert sich selbst. Immer schneller.';
-  if (gen < 36) return 'Denkt in Gedanken, die Menschen nicht denken können.';
-  return 'Ist. Überall. Gleichzeitig.';
+  return SKILL_LATE[gen < 28 ? 0 : gen < 36 ? 1 : 2];
 }
 
 export const NEWS: string[][] = [
@@ -298,6 +300,17 @@ export const NEWS: string[][] = [
     'OMEGA kündigt AGI an',
   ],
 ];
+
+// English overrides: same ids and numbers, only the texts change
+if (lang === 'en') {
+  ERAS.forEach((e, i) => Object.assign(e, ERAS_EN[i]));
+  for (const b of BUILDINGS) Object.assign(b, BUILDINGS_EN[b.id]);
+  for (const st of STAFF) Object.assign(st, STAFF_EN[st.id]);
+  for (const u of UPGRADES) Object.assign(u, UPGRADES_EN[u.id]);
+  MODEL_SKILLS.splice(0, MODEL_SKILLS.length, ...MODEL_SKILLS_EN);
+  SKILL_LATE.splice(0, SKILL_LATE.length, ...SKILL_LATE_EN);
+  NEWS.splice(0, NEWS.length, ...NEWS_EN);
+}
 
 // Required effective FLOP to train generation n (1-based).
 // the mid game gets steeper (scaling laws hit the wall) until recursion takes over

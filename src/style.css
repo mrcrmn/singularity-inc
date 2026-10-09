@@ -362,3 +362,6 @@ button:disabled { cursor: not-allowed; }
   #left { gap: 8px; }
   .card { padding: 8px; }
 }
+
+.lang-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; }
+.lang-row .px-label { margin-right: 6px; }

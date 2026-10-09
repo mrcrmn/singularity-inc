@@ -1,5 +1,7 @@
 // The pixel-art scene in the middle. Everything is drawn with fillRect on a
 // low-res canvas that CSS scales up with `image-rendering: pixelated`.
+import { L } from '../i18n';
+import { decimal } from '../game/format';
 import { EARTH_KG, type Derived, type State } from '../game/engine';
 
 const C = {
@@ -500,7 +502,7 @@ export class Scene {
       if (conv > 0.8) this.shake = Math.max(this.shake, (conv - 0.8) * 10);
     }
 
-    if (d.era >= 5) this.text(`${(conv * 100).toFixed(conv < 0.1 ? 3 : 1)}% COMPUTRONIUM`, W / 2, H - 14, C.green, 8, 'center');
+    if (d.era >= 5) this.text(`${decimal(conv * 100, conv < 0.1 ? 3 : 1)}% COMPUTRONIUM`, W / 2, H - 14, C.green, 8, 'center');
   }
 
   private explosion(ex: number, ey: number, R: number, now: number) {
@@ -563,7 +565,7 @@ export class Scene {
         this.r(0, 0, W, 2, C.red);
         this.r(0, this.H - 2, W, 2, C.red);
       }
-      this.text(d.powerLimited ? 'STROM AM LIMIT!' : 'ÜBERHITZUNG!', W / 2, Math.floor(this.H * 0.42), on ? C.red : C.orange, 8, 'center');
+      this.text(d.powerLimited ? L('STROM AM LIMIT!', 'POWER AT LIMIT!') : L('ÜBERHITZUNG!', 'OVERHEATING!'), W / 2, Math.floor(this.H * 0.42), on ? C.red : C.orange, 8, 'center');
       if (d.heatLimited) {
         for (let i = 0; i < 6; i++) {
           const ph = (t * 0.6 + i / 6) % 1;

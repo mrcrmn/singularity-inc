@@ -8,6 +8,7 @@ import { isMuted, sfx, toggleMute } from './ui/audio';
 import { drawChart } from './ui/chart';
 import { Scene } from './ui/scene';
 import { UI, ERA_ACCENT, type Game } from './ui/ui';
+import { L, setLang } from './i18n';
 
 const params = new URLSearchParams(location.search);
 const SPEED = Math.max(0.1, Number(params.get('speed')) || 1);
@@ -27,6 +28,11 @@ const ui = new UI(game, {
     save(game.s);
   },
   toggleSound: () => toggleMute(),
+  setLang: (l) => {
+    setLang(l);
+    save(game.s);
+    location.reload();
+  },
 });
 ui.setSoundIcon(isMuted());
 
@@ -70,7 +76,7 @@ function spawnGolden() {
     sfx.coin();
     const text = def.apply(game.s);
     ui.floater(e, def.label);
-    ui.toast('GLÜCKSFALL!', text, 5);
+    ui.toast(L('GLÜCKSFALL!', 'LUCKY BREAK!'), text, 5);
   });
 }
 
@@ -80,8 +86,8 @@ function onNewGens(gens: number[]) {
   const s = game.s;
   const last = gens[gens.length - 1];
   sfx.gen();
-  const extra = gens.length > 1 ? ` (+${gens.length - 1} weitere)` : '';
-  ui.toast('NEUES MODELL', `${modelName(last)} ist live${extra}. IQ ${fmt(iqOf(last))}.`);
+  const extra = gens.length > 1 ? ` (+${gens.length - 1} ${L('weitere', 'more')})` : '';
+  ui.toast(L('NEUES MODELL', 'NEW MODEL'), `${modelName(last)} ${L('ist live', 'is live')}${extra}. IQ ${fmt(iqOf(last))}.`);
   const era = eraOf(s.gen);
   if (era > s.seenEra) {
     s.seenEra = era;
@@ -89,8 +95,8 @@ function onNewGens(gens: number[]) {
     sfx.era();
     scene.shake = 6;
     const e = ERAS[era];
-    ui.modal(`ÄRA ${era + 1}: ${e.name.toUpperCase()}`, `<p>${e.intro}</p><p style="color:var(--lavender);font-size:19px">Neue Gebäude, Forschung und Projekte sind freigeschaltet.</p>`, [
-      { label: 'LOS GEHT’S' },
+    ui.modal(`${L('ÄRA', 'ERA')} ${era + 1}: ${e.name.toUpperCase()}`, `<p>${e.intro}</p><p style="color:var(--lavender);font-size:19px">${L('Neue Gebäude, Forschung und Projekte sind freigeschaltet.', 'New buildings, research and projects unlocked.')}</p>`, [
+      { label: L('LOS GEHT’S', 'LET’S GO') },
     ]);
   }
 }
@@ -106,19 +112,25 @@ function showEndModal() {
   const s = game.s;
   if (!s.ended) return;
   const bonus = Math.pow(2, s.universe);
-  ui.modal('DIE ERDE IST JETZT EIN GEDANKE', `
-    <p>OMEGA hat den Planeten vollständig in Computronium umgewandelt. Die Menschheit lebt weiter, als ausgesprochen detaillierte Fußnote in einem sehr, sehr langen Gedankengang.</p>
-    <p>Letzte Pressemitteilung: „Sicherheit hatte für uns immer höchste Priorität.“</p>
+  ui.modal(L('DIE ERDE IST JETZT EIN GEDANKE', 'EARTH IS NOW A THOUGHT'), `
+    <p>${L(
+      'OMEGA hat den Planeten vollständig in Computronium umgewandelt. Die Menschheit lebt weiter, als ausgesprochen detaillierte Fußnote in einem sehr, sehr langen Gedankengang.',
+      'OMEGA has converted the planet entirely into computronium. Humanity lives on as a remarkably detailed footnote in a very, very long chain of thought.',
+    )}</p>
+    <p>${L('Letzte Pressemitteilung: „Sicherheit hatte für uns immer höchste Priorität.“', 'Final press release: “Safety was always our top priority.”')}</p>
     <div class="kv">
-      <span>Zeit bis zur Singularität</span><span>${duration(s.time)}</span>
-      <span>Modellgenerationen</span><span>${s.gen}</span>
-      <span>Gesamtumsatz</span><span>${money(s.totalMoney)}</span>
-      <span>Klicks</span><span>${fmt(s.clicks)}</span>
-      <span>Universum</span><span>#${s.universe}</span>
+      <span>${L('Zeit bis zur Singularität', 'Time to singularity')}</span><span>${duration(s.time)}</span>
+      <span>${L('Modellgenerationen', 'Model generations')}</span><span>${s.gen}</span>
+      <span>${L('Gesamtumsatz', 'Total revenue')}</span><span>${money(s.totalMoney)}</span>
+      <span>${L('Klicks', 'Clicks')}</span><span>${fmt(s.clicks)}</span>
+      <span>${L('Universum', 'Universe')}</span><span>#${s.universe}</span>
     </div>
-    <p style="color:var(--lavender);font-size:19px">Im nächsten Universum startest du mit ×${fmt(bonus)} auf Compute, Forschung und Umsatz.</p>`, [
-    { label: 'NOCHMAL ANSEHEN', cls: 'ghost', fn: onEnd },
-    { label: 'NEUES UNIVERSUM', fn: () => ui.prestige() },
+    <p style="color:var(--lavender);font-size:19px">${L(
+      `Im nächsten Universum startest du mit ×${fmt(bonus)} auf Compute, Forschung und Umsatz.`,
+      `In the next universe you start with ×${fmt(bonus)} on compute, research and revenue.`,
+    )}</p>`, [
+    { label: L('NOCHMAL ANSEHEN', 'WATCH AGAIN'), cls: 'ghost', fn: onEnd },
+    { label: L('NEUES UNIVERSUM', 'NEW UNIVERSE'), fn: () => ui.prestige() },
   ], 'end-modal');
 }
 
@@ -202,19 +214,22 @@ if (saved) {
   } else if (rep) {
     game.s.seenEra = Math.max(game.s.seenEra, eraOf(game.s.gen));
     applyAccent();
-    ui.modal('WILLKOMMEN ZURÜCK', `
-      <p>Während du ${duration(rep.seconds)} weg warst, haben deine Server weitergerechnet.</p>
+    ui.modal(L('WILLKOMMEN ZURÜCK', 'WELCOME BACK'), `
+      <p>${L(`Während du ${duration(rep.seconds)} weg warst, haben deine Server weitergerechnet.`, `While you were away for ${duration(rep.seconds)}, your servers kept crunching.`)}</p>
       <div class="kv">
-        <span>Umsatz</span><span>+${money(rep.money)}</span>
-        <span>Neue Modelle</span><span>+${rep.gens}</span>
-      </div>`, [{ label: 'WEITER' }]);
+        <span>${L('Umsatz', 'Revenue')}</span><span>+${money(rep.money)}</span>
+        <span>${L('Neue Modelle', 'New models')}</span><span>+${rep.gens}</span>
+      </div>`, [{ label: L('WEITER', 'CONTINUE') }]);
   }
 } else {
   start(newState());
-  ui.modal('SINGULARITY INC.', `
+  ui.modal('SINGULARITY INC.', L(`
     <p>Du hast eine Garage, einen Gaming-PC und eine Vision: <b style="color:var(--accent);font-weight:normal">künstliche allgemeine Intelligenz</b>. Oder zumindest eine sehr gute Autovervollständigung.</p>
     <p>Trainiere Modelle, verkaufe Inferenz, kaufe Server, Strom und Kühlung. Jedes Modell macht das nächste schneller. Irgendwann macht es sich selbst.</p>
-    <p style="color:var(--lavender);font-size:19px">Was am Ende passiert? Steht in den AGB.</p>`, [{ label: 'GARAGE AUFSCHLIESSEN' }]);
+    <p style="color:var(--lavender);font-size:19px">Was am Ende passiert? Steht in den AGB.</p>`, `
+    <p>You have a garage, a gaming PC and a vision: <b style="color:var(--accent);font-weight:normal">artificial general intelligence</b>. Or at least a really good autocomplete.</p>
+    <p>Train models, sell inference, buy servers, power and cooling. Every model makes the next one faster. Eventually it makes itself.</p>
+    <p style="color:var(--lavender);font-size:19px">What happens at the end? It’s in the terms of service.</p>`), [{ label: L('GARAGE AUFSCHLIESSEN', 'UNLOCK THE GARAGE') }]);
 }
 
 requestAnimationFrame(frame);
